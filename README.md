@@ -1,293 +1,273 @@
-# kart
-Kart资料
-# RaceHF Kart 协议
+# RaceHF Kart Protocol
 
-## 概述
+## Overview
 
 \[[English](README.md)\]
 [[中文](README_zh.md)\]
 
-Bean项目是RaceHF下的一个面向专业赛车的产品，提供更专业的数据显示方式和专业数据分析的支持，提供更为直接的驾驶行为分析。
-
-产品主要特点：
-
-- **M4内核**高性能处理器
-- **BT+BLE+WIFI**融合通讯方式.
-- 优质定位芯片，最高真实刷新率可达**20hz**，专为赛车应用场景优化算法。兼容GPS/GLONASS，内置高灵敏度陶瓷天线，可外接天线
-- 支持**空中固件升级**
-- 支持**SD卡**记录VBO格式文件，把记录的数据导入CTool、Track attack等主流的赛车数据分析软件
-- 实现开机即用，不再依赖手机
-- 开放的数据通讯协议，第三方软件开发商快速开发和硬件兼容的APP
-- 支持Andriod与IOS
-- 支持全球使用最广泛的两个赛车数据分析APP：*Harry's Laptimer*（仅IOS）和*Racechrono*
-
-***
-
-> 广播名&设备名：       RaceHF_XXXX (XXXX表示4个十六进制数)  
+> AdvData & DevName:   RaceHF_XXXX (XXXX represents 4 hexadecimal numbers)  
 > Service UUID：       0000ABF0-0000-1000-8000-00805F9B34FB  
 > Characteristic UUID：0000ABF1-0000-1000-8000-00805F9B34FB
 
-Kart产品兼容**蓝牙4.2**协议(MTU_MAX=517)，数据包固定为**80字节**一包。
+Kart product is compatible with **Bluetooth 4.2** protocol (MTU_MAX=517),
+the data packet is fixed to **80 bytes**.
 
-## 主动数据协议
+## Active Packet Protocol
 
-主动数据协议是设备周期性主动发送数据，使用BLE通知方式发送。  
-数据包第一个字节(index)表示该数据包类型。
+The active data protocol is that the device periodically sends data periodically and sends it using BLE notification.  
+The first byte of a packet indicates the packet type.
 
-Index | Type           | Comment
----   | ---            | ---
-0x11  | GPS            | UNIX时间戳 / 毫秒 / 经度 / 纬度 / 速度 / 方位角 / HDOP / 海拔高度 / 锁定卫星数 / 定位模式
-0x21  | Engine.Rpm     | UNIX时间戳 / 毫秒 / 发动机转速时间间隔 / 转速有效数据个数 / 发动机转速数组
-0x22  | Engine.Temper  | UNIX时间戳 / 毫秒 / 冷却液温度 / 缸盖温度 / 排气管温度
-0xA1  | Device         | 电池电量
-0x80  | Meaningless    | 无意义数据包
+Index | Type            | Comment
+---   | ---             | ---
+0x11  | GPS             | UNIX Timestamp / Millsecond / Longitude / Latitude / Speed / Track angle / HDOP / Altitude / Tracked Satellites / Fix quality
+0x21  | Engine.Rpm      | UNIX Timestamp / Millsecond / RPM Capture Interval / Valid RPM count in RPM Array / RPM Array
+0x22  | Engine.Temper   | UNIX Timestamp / Millsecond / Water Temperature / Cylinder Head Temperature / Exhaust Gas Temperature
+0xA1  | Device          | Battery percentage
+0x80  | Meaningless     | Meaningless Packet
 
-### GPS
+### GPS Part
 
-GPS部分包含从GPS中解析得到的数据，
-数据主要从NMEA格式中读取包括经纬度、时间、速度等。  
-按照指定格式排列到结构体中，无内存对齐。
+The GPS part contains data parsed from GPS.  
+The data is mainly read from the NMEA format including latitude and longitude, time, speed, and the like.  
+The data arranged into the structure in the specified format, no memory alignment.
 
-GPS 包含 **UNIX时间戳** / **毫秒**  / **经度** / **纬度** / **速度** / **方位角** / **HDOP** / **海拔高度** / **锁定卫星数** / **定位模式**  
-数据排列方式如下：
+GPS contains **UNIX Timestamp** / **millsecond**  / **Longitude** / **Latitude** / **Speed** / **Track Angle** / **HDOP** / **Altitude** / **Tracked Satellites**  / **Fix quality**  
+The data is arranged as follows：
 
 Byte Index | Content             | Type(bytes) | Comment
 ---        | ---                 | ---         | ---
-0          | Index               | byte(1)     | = 0x11，表示该数据包是GPS
-1          | unix timestamp      | uint32(4)   | UNIX时间戳，从*1970/1/1*以UTC-0作为时间起点
-5          | millsecond          | uint16(2)   | 毫秒数，例如： 0, 100 ,200, ... 900 或者更高经度: 50, 150, 950等
-7          | longitude           | double(8)   | 经度，例如：12.12345678 或 123.12345678 单位：度
-15         | latitude            | double(8)   | 纬度，例如：12.12345678 or -12.12345678 单位：度
-23         | speed               | float(4)    | 速度，总是大于等于0, 单位：km/h
-27         | direction           | float(4)    | 方位角，单位：度
-31         | hdop                | float(4)    | 水平定位因子，表示水平定位精度因数
-35         | altitude            | int16(2)    | 海拔高度，**整数**类型，单位：米
-37         | tracked satellites  | byte(1)     | 锁定卫星数量，没有GSA情况下最大是12，否则是24
-38         | fix quality         | byte(1)     | 定位模式，0:未定位，1:2D定位，2:3D定位，4:3D差分定位
+0          | Index               | byte(1)     | = 0x11，Indicates that the packet is GPS
+1          | unix timestamp      | uint32(4)   | Seconds from 1970/1/1 UTC-0 to the present
+5          | millsecond          | uint16(2)   | eg: 0, 100 ,200, ... 900 or higher precision like: 50, 150,950,etc..
+7          | longitude           | double(8)   | eg: 12.12345678 or 123.12345678 unit:degree
+15         | latitude            | double(8)   | eg: 12.12345678 or -12.12345678 unit:degree
+23         | speed               | float(4)    | Always >= 0, unit:km/h
+27         | direction           | float(4)    | unit:degree
+31         | hdop                | float(4)    | Horizontal dilution of position
+35         | altitude            | int16(2)    | **Integer** Type unit:meter
+37         | tracked satellites  | byte(1)     | The maximum is 12 without GSA, otherwise the maximum is 24
+38         | fix quality         | byte(1)     | 0:invalid, 1:GPS fix(2D)，2:GPS fix(3D)，4:DGPS fix
 
 ### Engine
 
 #### Engine.Rpm
 
-Engine.Rpm 包含 **UNIX时间戳** / **毫秒** / **发动机转速时间间隔** / **转速有效数据个数** / **发动机转速数组**  
-数据排列方式如下：
+Engine.Rpm contains **UNIX Timestamp** / **millsecond** / **RPM Capture Interval** / **Valid RPM count in RPM Array** / **RPM Array**  
+The data is arranged as follows：
 
 Byte Index | Content             | Type(bytes) | Comment
 ---        | ---                 | ---         | ---
-0          | Index               | byte(1)     | = 0x21，表示该数据包是Engine.Rpm
-1          | unix timestamp      | uint32(4)   | UNIX时间戳，从*1970/1/1*以UTC-0作为时间起点
-5          | millsecond          | uint16(2)   | 毫秒数，例如： 0, 100 ,200, ... 900 或者更高经度: 50, 150, 950等
-7          | rpm cap interval    | uint16(2)   | 转速采集间隔 单位：毫秒
-9          | rpm count           | uint16(2)   | 转速数组中有效转速数据个数
-11         | rpm array           | uint16(2*n) | 转速数组
+0          | Index               | byte(1)     | = 0x21，Indicates that the packet is Engine.Rpm
+1          | unix timestamp      | uint32(4)   | Seconds from 1970/1/1 UTC-0 to the present
+5          | millsecond          | uint16(2)   | eg: 0, 100 ,200, ... 900 or higher precision like: 50, 150,950,etc..
+7          | rpm cap interval    | uint16(2)   | rpm capture interval unit:ms
+9          | rpm count           | uint16(2)   | indicate valid rpms in rpm array
+11         | rpm array           | uint16(2*n) | rpm array
 
-> 发动机转速数组说明：  
-> 为了降低空中数据包传输量，所以把从某个时刻的多个转速数据压缩到一个数据包中发送出来，  
-> rpm cap interval表示转速每次采集的时间间隔。
+> Engine speed array description:  
+> In order to reduce the amount of air packet transmission, the rpms from a certain moment is compressed and sent to a data packet.  
+> rpm cap interval indicates the time interval for each acquisition of the rpm.
 
 #### Engine.Temper
 
-Engine.Temper 包含 **UNIX时间戳** / **毫秒**  / **冷却液温度** / **缸盖温度** / **排气管温度**  
-数据排列方式如下：
+Engine.Temper contains **UNIX Timestamp** / **millsecond**  / **Water Temperature** / **Cylinder Head Temperature** / **Exhaust Gas Temperature**  
+The data is arranged as follows：
 
 Byte Index | Content             | Type(bytes) | Comment
 ---        | ---                 | ---         | ---
-0          | Index               | byte(1)     | = 0x22，表示该数据包是Engine.Temper
-1          | unix timestamp      | uint32(4)   | UNIX时间戳，从*1970/1/1*以UTC-0作为时间起点
-5          | millsecond          | uint16(2)   | 毫秒数，例如： 0, 100 ,200, ... 900 或者更高经度: 50, 150, 950等
-7          | water temp          | float(4)    | 冷却液温度 单位：摄氏度
-11         | cylinder head temp  | float(4)    | 缸盖温度 单位：摄氏度
-15         | exhaust gas temp    | float(4)    | 排气管温度 单位：摄氏度
+0          | Index               | byte(1)     | = 0x22，Indicates that the packet is Engine.Temper
+1          | unix timestamp      | uint32(4)   | Seconds from 1970/1/1 UTC-0 to the present
+5          | millsecond          | uint16(2)   | eg: 0, 100 ,200, ... 900 or higher precision like: 50, 150,950,etc..
+7          | water temp          | float(4)    | WAT unit:celsius
+11         | cylinder head temp  | float(4)    | CHT unit:celsius
+15         | exhaust gas temp    | float(4)    | EGT unit:celsius
 
 ### Device
 
-Bean设备信息包含 **电池电量**  
-数据排列方式如下：
+Kart contains **Battery percentage**  
+The data is arranged as follows :
 
 Byte Index | Content             | Type(bytes) | Comment
 ---        | ---                 | ---         | ---
-0          | Index               | byte(1)     | = 0xA1，表示该数据包是Device
-1          | battery percent     | int8(1)     | 电池电量百分比，电量错误-1
+0          | Index               | byte(1)     | = 0xA1，Indicates that the packet is device information
+1          | battery percent     | int8(1)     | Battery power percentage, error is -1
 
 ***
 
-## 被动数据协议
-
-被动数据协议使用请求——响应方式传输信息，数据传输协议如下:
-
+## Passive Packet Protocol
 <table>
 	<tr>
-		<td >类</td>
-		<td>项</td>
-		<td>读取/设置(1/0)</td>	
-		<td>6字节无效数据</td>	
-		<td colspan = "3"> 参数(按顺序排列)</td>	
+		<td >Class</td>
+		<td>Item</td>
+		<td>Read/Set (1/0)</td>	
+		<td>6-byte invalid data</td>		
+		<td colspan = "3">Parameter(in order)</td>	
 	</tr>
 	<tr>
-		<td rowspan = "3">版本(0x01) </td>
-			<td>设备型号(0x01)</td>
+		<td rowspan = "3">version (0x01) </td>
+			<td>Equipment Model(0x01)</td>
 			<td>1</td>
 			<td>-</td>
-			<td>字符串(byte[])</td>	
-			<td> </td>	
-			<td> </td>	
+			<td> String (byte [])</td>	
+			<td> </td>
+			<td> </td>				
 	</tr>
 	<tr>
-			<td>硬件版本(0x01)</td>
+			<td> Hardware Version (0x01)</td>
 			<td>1</td>
 			<td>-</td>
-			<td>字符串(byte[])</td>
-			<td> </td>	
+			<td>String(byte [])</td>
+			<td> </td>
 			<td> </td>	
 	</tr>	
 	<tr>
-			<td>软件版本(0x01))</td>
+			<td>Software Version(0x01))</td>
 			<td>1</td>
 			<td>-</td>
-			<td>字符串(byte[])</td>
-			<td> </td>	
+			<td>String(byte [])</td>
+			<td> </td>
 			<td> </td>	
 	</tr>	
 	<tr>
-		<td rowspan = "2">发动机(0x11)</td>
-			<td>发动机转速倍率(0x01)</td>
+		<td rowspan = "2">Engine(0x11)</td>
+			<td>Engine Speed Ratio(0x01)</td>
 			<td>1/0</td>
 			<td>-</td>
-			<td>倍率(rpm*n)(uint8)</td>	
-			<td> </td>	
-			<td> </td>	
+			<td>Ratio (rpm*n) (uint 8)</td>
+			<td> </td>
+			<td> </td>				
 	</tr>	
 	<tr> 
-			<td>发动机采样频率(0x02)</td>
+			<td>Engine Sampling Frequency(0x02)</td>
 			<td>1/0</td>
 			<td>-</td>
-			<td>频率(10,20,50,100)(uint16)</td>	
-			<td> </td>	
-			<td> </td>	
-	</tr>	
-	<tr>
-		<td rowspan = "4">温度采集(0x12)</td>
-			<td>内部温度(0x01)</td>
-			<td>1/0</td>
-			<td>-</td>
-			<td>温度值(int16)</td>	
-			<td> </td>	
+			<td> Frequency(10,20,50,100)(uint16)</td>	
+			<td> </td>
 			<td> </td>	
 	</tr>	
 	<tr>
-			<td>冷却液温度(0x11)</td>
+		<td rowspan = "4">Temperature acquisition(0x12)</td>
+			<td> Internal temperature(0x01)</td>
 			<td>1/0</td>
 			<td>-</td>
-			<td>最低温度(int16)</td>
-			<td>最高温度(int16)</td>	
-			<td>报警温度(int16)</td>				
+			<td>Temperature value (int16)</td>	
+			<td> </td>
+			<td> </td>	
 	</tr>	
 	<tr>
-			<td>缸盖温度(0x12)</td>
+			<td>Coolant temperature(0x11)</td>
 			<td>1/0</td>
 			<td>-</td>
-			<td>最低温度(int16)</td>
-			<td>最高温度(int16)</td>	
-			<td>报警温度(int16)</td>	
+			<td>minimum temperature (int16)</td>
+			<td>Maximum temperature (int16) </td>
+			<td>Alarm temperature (int16) </td>				
 	</tr>	
 	<tr>
-			<td>排气温度(0x13)</td>
+			<td>Cylinder head temperature(0x12)</td>
 			<td>1/0</td>
 			<td>-</td>
-			<td>最低温度(int16)</td>
-			<td>最高温度(int16)</td>	
-			<td>报警温度(int16)</td>	
+			<td>minimum temperature (int16)</td>
+			<td>Maximum temperature (int16) </td>
+			<td>Alarm temperature (int16) </td>
+	</tr>	
+	<tr>
+			<td>Exhaust temperature (0x13)</td>
+			<td>1/0</td>
+			<td>-</td>
+			<td>minimum temperature (int16)</td>
+			<td>Maximum temperature (int16) </td>
+			<td>Alarm temperature (int16) </td>
+	</tr>	
+	<tr>
+			<td rowspan = "2">Working mode (0x81)</td>
+			<td> Enter boot (0x01)</td>
+			<td> 0</td>
+			<td>- </td>
+			<td> </td>
+			<td> </td>
+			<td> </td>
 	</tr>
 	<tr>
-		<td rowspan = "2">工作模式(0x81)</td>
-			<td>进入引导(0x01) </td>
-			<td>0</td>
-			<td>-</td>
+			<td> Enter firmware upgrade (0x12)</td>
+			<td> 0</td>
+			<td>- </td>
 			<td> </td>
-			<td> </td>				
-			<td> </td>	
-	</tr>	
-	<tr>
-			<td>进入固件升级(0x12) </td>
-			<td>0</td>
-			<td>-</td>
 			<td> </td>
-			<td> </td>				
-			<td> </td>	
-	</tr>	
+			<td> </td>
+	</tr>
 	<tr>
-		<td rowspan = "3">固件升级(0x82)</td>
-			<td>最大数据包大小(0x11) </td>
+		<td rowspan = "3">Firmware upgrade (0x82)</td>
+			<td> Maximum Packet Size(0x11) </td>
 			<td>1</td>
 			<td>-</td>
-			<td>数据包大小(uint32)</td>	
-			<td>错误传输次数(uint8)</td>
-			<td> </td>				
-	</tr>
+			<td> Packet size (uint32)</td>
+			<td> Number of error transfers (uint8)</td>
+			<td> </td>		
+	</tr>	
 	<tr>
-			<td>文件参数(0x12)</td>
+			<td>File parameters (0x12)</td>
 			<td>0</td>
 			<td>-</td>
-			<td>文件大小(uint32)</td>	
-			<td>校验码(uint8)</td>	
-			<td> </td>	
-	</tr>
+			<td>Packet size (uint32)</td>	
+			<td> Check code (uint8)</td>
+			<td> </td>			
+	</tr>	
 	<tr>
-			<td>数据包参数(0x13)</td>
+			<td>Packet parameters(0x13)</td>
 			<td>0</td>
 			<td>-</td>
-			<td>数据包大小(uint32)</td>	
-			<td>校验码(uint8)</td>	
-			<td> </td>				
+			<td>Packet size (uint32)</td>
+			<td> Check code (uint8)</td>
+			<td> </td>			
 	</tr>		
 	<tr>
-		<td rowspan = "5">计时器(0xA1)</td>
-			<td>总开机时间(0x10) </td>
+		<td rowspan = "5"> Timer (0xA1)</td>
+			<td> Total boot-up time(0x10) </td>
 			<td>1</td>
 			<td>-</td>
-			<td>分钟数(uint32)</td>	
-			<td> </td>		
-			<td> </td>				
+			<td> Number of minutes (uint32)</td>	
+			<td> </td>
+			<td> </td>
 	</tr>
 	<tr>
-			<td>保养计时器(0x11)</td>
+			<td> Maintenance timer(0x11)</td>
 			<td>1/0</td>
 			<td>-</td>
-			<td>开关(uint8)</td>	
-			<td>分钟数(uint32)</td>	
-			<td>保养周期(uint32)</td>	
+			<td>Switch (uint8)</td>	
+			<td> Number of minutes (uint 32)</td>
+			<td> Maintenance cycle (uint 32)</td>	
 	</tr>	
 	<tr>
-			<td>计时器1(0x21)</td>
+			<td> Timer 1(0x21)</td>
 			<td>1/0</td>
 			<td>-</td>
-			<td>开关(uint8)</td>	
-			<td>分钟数(uint32)</td>	
-			<td> </td>	
+			<td> Switch (uint8)</td>
+			<td> Number of minutes (uint 32)</td>
+			<td> </td>		
 	</tr>	
 	<tr>
-			<td>计时器2(0x22)</td>
+			<td>Timer 2((0x22))</td>
 			<td>1/0</td>
 			<td>-</td>
-			<td>开关(uint8)</td>
-			<td>分钟数(uint32)</td>	
-			<td> </td>				
+			<td>Switch(uint8)</td>
+			<td> Number of minutes (uint 32)</td>
+			<td>  </td>			
 	</tr>	
 	<tr>
-			<td>计时器3(0x23)</td>
+			<td>Timer 3((0x23))</td>
 			<td>1/0</td>
 			<td>-</td>
-			<td>开关(uint8)</td>
-			<td>分钟数(uint32)</td>	
-			<td> </td>				
+			<td>Switch(uint8)</td>	
+			<td> Number of minutes (uint 32)</td>
+			<td>  </td>
 	</tr>		
 </table>
 
 ***
 
-## 有问题反馈
+## Feedback
 
-在开发中有任何问题，欢迎反馈给我
+If you have any questions during the development process, please contact us.
 
-- 邮件：[yuanxiaochen1995@gmail.com](yuanxiaochen1995@gmail.com)
-- facebook： [@弁杓](https://www.facebook.com/profile.php?id=100015307727134)
+- Email: [yuanxiaochen1995@gmail.com](yuanxiaochen1995@gmail.com)
+- facebook: [@弁杓](https://www.facebook.com/profile.php?id=100015307727134)
