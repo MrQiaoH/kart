@@ -5,7 +5,7 @@
 \[[English](README.md)\]
 [[中文](README_zh.md)\]
 
-Bean项目是RaceHF下的一个面向专业赛车的产品，提供更专业的数据显示方式和专业数据分析的支持，提供更为直接的驾驶行为分析。
+Kart项目是RaceHF下的一个面向专业赛车的产品，提供更专业的数据显示方式和专业数据分析的支持，提供更为直接的驾驶行为分析。
 
 产品主要特点：
 
@@ -25,7 +25,7 @@ Bean项目是RaceHF下的一个面向专业赛车的产品，提供更专业的�
 > Service UUID：       0000ABF0-0000-1000-8000-00805F9B34FB  
 > Characteristic UUID：0000ABF1-0000-1000-8000-00805F9B34FB
 
-Kart产品兼容**蓝牙4.2**协议(MTU_MAX=517)，数据包固定为**80字节**一包。
+Kart产品兼容**蓝牙4.2**协议(MTU_MAX=517)，数据包固定为**80字节**（无效字节为0）一包。
 
 ## 主动数据协议
 
@@ -34,11 +34,11 @@ Kart产品兼容**蓝牙4.2**协议(MTU_MAX=517)，数据包固定为**80字节*
 
 Index | Type           | Comment
 ---   | ---            | ---
-0x11  | GPS            | UNIX时间戳 / 毫秒 / 经度 / 纬度 / 速度 / 方位角 / HDOP / 海拔高度 / 锁定卫星数 / 定位模式
-0x21  | Engine.Rpm     | UNIX时间戳 / 毫秒 / 发动机转速时间间隔 / 转速有效数据个数 / 发动机转速数组
-0x22  | Engine.Temper  | UNIX时间戳 / 毫秒 / 冷却液温度 / 缸盖温度 / 排气管温度
-0xA1  | Device         | 电池电量
-0x80  | Meaningless    | 无意义数据包
+0x10  | GPS            | UNIX时间戳 / 毫秒 / 经度 / 纬度 / 速度 / 方位角 / HDOP / 海拔高度 / 锁定卫星数 / 定位模式
+0x20  | Engine.Rpm     | UNIX时间戳 / 毫秒 / 发动机转速时间间隔 / 转速有效数据个数 / 发动机转速数组
+0x21  | Engine.Temper  | UNIX时间戳 / 毫秒 / 冷却液温度 / 缸盖温度 / 排气管温度
+0x30  | Device         | 电池电量
+0x60  | Meaningless    | 无意义数据包
 
 ### GPS
 
@@ -61,6 +61,7 @@ Byte Index | Content             | Type(bytes) | Comment
 31         | hdop                | float(4)    | 水平定位因子，表示水平定位精度因数
 35         | altitude            | int16(2)    | 海拔高度，**整数**类型，单位：米
 37         | tracked satellites  | byte(1)     | 锁定卫星数量，没有GSA情况下最大是12，否则是24
+38		   | visible satellites  | byte(1)     | 可见卫星数量
 39         | fix quality         | byte(1)     | 定位模式，0:未定位，1:2D定位，2:3D定位，4:3D差分定位
 
 ### Engine
@@ -118,11 +119,11 @@ Byte Index | Content             | Type(bytes) | Comment
 		<td >类</td>
 		<td>项</td>
 		<td>读取/设置(1/0)</td>	
-		<td>6字节无效数据</td>	
+		<td>7字节无效数据</td>	
 		<td colspan = "3"> 参数(按顺序排列)</td>	
 	</tr>
 	<tr>
-		<td rowspan = "3">版本(0x01) </td>
+		<td rowspan = "3">版本(0x80) </td>
 			<td>设备型号(0x01)</td>
 			<td>1</td>
 			<td>-</td>
@@ -131,7 +132,7 @@ Byte Index | Content             | Type(bytes) | Comment
 			<td> </td>	
 	</tr>
 	<tr>
-			<td>硬件版本(0x01)</td>
+			<td>硬件版本(0x02)</td>
 			<td>1</td>
 			<td>-</td>
 			<td>字符串(byte[])</td>
@@ -139,7 +140,7 @@ Byte Index | Content             | Type(bytes) | Comment
 			<td> </td>	
 	</tr>	
 	<tr>
-			<td>软件版本(0x01))</td>
+			<td>软件版本(0x03))</td>
 			<td>1</td>
 			<td>-</td>
 			<td>字符串(byte[])</td>
@@ -147,7 +148,7 @@ Byte Index | Content             | Type(bytes) | Comment
 			<td> </td>	
 	</tr>	
 	<tr>
-		<td rowspan = "2">发动机(0x11)</td>
+		<td rowspan = "2">发动机(0x90)</td>
 			<td>发动机转速倍率(0x01)</td>
 			<td>1/0</td>
 			<td>-</td>
@@ -164,7 +165,7 @@ Byte Index | Content             | Type(bytes) | Comment
 			<td> </td>	
 	</tr>	
 	<tr>
-		<td rowspan = "4">温度采集(0x12)</td>
+		<td rowspan = "4">温度采集(0xA0)</td>
 			<td>内部温度(0x01)</td>
 			<td>1/0</td>
 			<td>-</td>
@@ -197,7 +198,7 @@ Byte Index | Content             | Type(bytes) | Comment
 			<td>报警温度(int16)</td>	
 	</tr>
 	<tr>
-		<td rowspan = "2">工作模式(0x81)</td>
+		<td rowspan = "2">工作模式(0xB0)</td>
 			<td>进入引导(0x01) </td>
 			<td>0</td>
 			<td>-</td>
@@ -214,7 +215,7 @@ Byte Index | Content             | Type(bytes) | Comment
 			<td> </td>	
 	</tr>	
 	<tr>
-		<td rowspan = "3">固件升级(0x82)</td>
+		<td rowspan = "3">固件升级(0xC0)</td>
 			<td>最大数据包大小(0x11) </td>
 			<td>1</td>
 			<td>-</td>
@@ -239,7 +240,7 @@ Byte Index | Content             | Type(bytes) | Comment
 			<td> </td>				
 	</tr>		
 	<tr>
-		<td rowspan = "5">计时器(0xA1)</td>
+		<td rowspan = "5">计时器(0xD0)</td>
 			<td>总开机时间(0x10) </td>
 			<td>1</td>
 			<td>-</td>
@@ -280,6 +281,28 @@ Byte Index | Content             | Type(bytes) | Comment
 			<td> </td>				
 	</tr>		
 </table>
+
+备注:手机APP向设备发送数据完成后，手机回传数据，并添加状态码
+<table>
+	<tr>
+		<td>响应状态</td>
+		<td>响应码</td>
+	</tr>
+	<tr>
+		<td>成功</td>
+		<td>0x01 0x01 </td>
+	</tr>
+	<tr>
+		<td>失败</td>
+		<td>0x01 0x00 </td>
+	</tr>
+</table>
+
+示例: 
+
+>手机发送数据 0x90 01 00 00 00 00 00 00 00 00 00 00 00 00 00    
+>成功：设备传回数据 0x90 01 00 00 00 00 00 00 00 00 01 01 00 00 00   
+>失败：设备传回数据 0x90 01 00 00 00 00 00 00 00 00 01 00 00 00 00  
 
 ***
 
