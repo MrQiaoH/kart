@@ -61,7 +61,7 @@ Byte Index | Content             | Type(bytes) | Comment
 31         | hdop                | float(4)    | 水平定位因子，表示水平定位精度因数
 35         | altitude            | int16(2)    | 海拔高度，**整数**类型，单位：米
 37         | tracked satellites  | byte(1)     | 锁定卫星数量，没有GSA情况下最大是12，否则是24
-38         | fix quality         | byte(1)     | 定位模式，0:未定位，1:2D定位，2:3D定位，4:3D差分定位
+39         | fix quality         | byte(1)     | 定位模式，0:未定位，1:2D定位，2:3D定位，4:3D差分定位
 
 ### Engine
 
