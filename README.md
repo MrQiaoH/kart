@@ -155,7 +155,7 @@ Byte Index | Content             | Type(bytes) | Comment
 			<td> </td>	
 	</tr>	
 	<tr>
-			<td>Coolant temperature(0x11)</td>
+			<td>Water temperature(0x11)</td>
 			<td>1/0</td>
 			<td>-</td>
 			<td>minimum temperature (int16)</td>
@@ -171,7 +171,7 @@ Byte Index | Content             | Type(bytes) | Comment
 			<td>Alarm temperature (int16) </td>
 	</tr>	
 	<tr>
-			<td>Exhaust temperature (0x13)</td>
+			<td>Exhaust Gas Temperature (0x13)</td>
 			<td>1/0</td>
 			<td>-</td>
 			<td>minimum temperature (int16)</td>
